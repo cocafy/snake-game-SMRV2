@@ -1,247 +1,110 @@
-import javax.swing.*; // Importamos librerías para ventanas y componentes visuales
-import java.awt.*;    // Importamos librerías para gráficos (colores, dibujo)
-import java.awt.event.*; // Importamos librerías para manejar eventos (teclado)
-import java.util.Random; // Importamos para generar números aleatorios (comida)
+// =========================================================================
+// SECCIÓN DE IMPORTS: Aquí traemos las herramientas de las librerías de Java
+// =========================================================================
 
-// La clase principal hereda de JPanel para poder dibujar en ella
-// Implementa ActionListener para el bucle del juego (reloj)
-// Implementa KeyListener para escuchar las flechas del teclado
-public class JuegoSnake extends JPanel implements ActionListener, KeyListener {
+// LIBRERÍA: javax.swing (Java Swing - Interfaz Gráfica Moderna)
+import javax.swing.JFrame; // Clase que crea la ventana principal del sistema operativo (con borde, título, botón cerrar).
+import javax.swing.JPanel; // Clase que funciona como un "lienzo" o panel invisible donde dibujaremos el juego.
+import javax.swing.Timer;  // Clase que ejecuta un bloque de código repetidamente cada X milisegundos (el bucle del juego).
 
-    // --- CONFIGURACIÓN DEL JUEGO ---
-    private final int ANCHO_PANTALLA = 600;  // Ancho de la ventana en píxeles
-    private final int ALTO_PANTALLA = 600;   // Alto de la ventana en píxeles
-    private final int TAMANO_CUADRO = 25;    // Tamaño de cada cuadradito del juego
-    // Calculamos cuántos cuadros caben en total (área total / área de un cuadro)
-    private final int UNIDADES = (ANCHO_PANTALLA * ALTO_PANTALLA) / (TAMANO_CUADRO * TAMANO_CUADRO);
-    private final int VELOCIDAD = 75;        // Velocidad del juego (milisegundos entre actualizaciones)
+// LIBRERÍA: java.awt (Abstract Window Toolkit - Gráficos y Diseño Básico)
+import java.awt.Color;     // Clase que define colores estándar (Color.red, Color.black) y permite crear nuevos RGB.
+import java.awt.Dimension; // Clase objeto que guarda un ancho y un alto (width, height) para dimensionar la ventana.
+import java.awt.Font;      // Clase para definir la tipografía (fuente, estilo, tamaño) de los textos.
+import java.awt.FontMetrics; // Clase técnica que sirve para medir cuántos píxeles ocupa un texto en pantalla (para centrarlo).
+import java.awt.Graphics;  // La clase más importante para dibujar: es el "pincel" que pinta líneas, óvalos y cuadrados.
+import java.awt.Toolkit;   // (Opcional) Herramienta para conectar con el sistema nativo (ej: para suavizar animaciones).
 
-    // --- ARRAYS PARA GUARDAR LA POSICIÓN DE LA SERPIENTE ---
-    // x[] guarda las coordenadas horizontales del cuerpo
-    // y[] guarda las coordenadas verticales del cuerpo
-    private final int x[] = new int[UNIDADES];
-    private final int y[] = new int[UNIDADES];
+// LIBRERÍA: java.awt.event (Manejo de Eventos - Interacción Usuario)
+import java.awt.event.ActionEvent; // Clase que representa el "evento" de que pasó el tiempo (un tick del reloj).
+import java.awt.event.ActionListener; // Interfaz ("contrato") que nos obliga a tener un método para recibir los eventos del reloj.
+import java.awt.event.KeyAdapter; // Clase base que facilita escuchar el teclado (para no tener que implementar todos los métodos).
+import java.awt.event.KeyEvent;   // Clase que contiene las constantes de las teclas (ej: KeyEvent.VK_UP es la flecha arriba).
 
-    // --- VARIABLES DEL ESTADO DEL JUEGO ---
-    private int partesCuerpo = 6;  // La serpiente empieza con 6 partes
-    private int manzanasComidas;   // Contador de puntuación
-    private int manzanaX;          // Posición X de la comida actual
-    private int manzanaY;          // Posición Y de la comida actual
-    private char direccion = 'R';  // Dirección actual: 'R' (derecha), 'L' (izquierda), 'U' (arriba), 'D' (abajo)
-    private boolean enJuego = false; // Indica si el juego está corriendo
-    
-    private Timer timer;           // El reloj que controla la velocidad del juego
-    private Random random;         // Generador de números aleatorios
+// LIBRERÍA: java.util (Utilidades Generales)
+import java.util.Random; // Clase matemática para generar números aleatorios (para poner la manzana en lugares al azar).
 
-    // --- CONSTRUCTOR ---
-    public JuegoSnake() {
-        random = new Random(); // Inicializamos el generador aleatorio
+
+// =========================================================================
+// CLASE PRINCIPAL
+// Hereda de JPanel (es un panel) e implementa ActionListener (reacciona al tiempo)
+// =========================================================================
+public class SnakeJuego extends JPanel implements ActionListener {
+
+    // Constantes de configuración (final significa que no cambian)
+    private final int ANCHO = 600;
+    private final int ALTO = 600;
+    private final int TAMANO_UNITARIO = 25; // Tamaño de cada cuadrito de la serpiente
+    // Cálculo total de unidades posibles en pantalla
+    private final int UNIDADES_JUEGO = (ANCHO * ALTO) / (TAMANO_UNITARIO * TAMANO_UNITARIO);
+    private final int RETRASO = 75; // Velocidad del juego en milisegundos (Controlado por javax.swing.Timer)
+
+    // Arrays para guardar las coordenadas (x, y) de todas las partes del cuerpo
+    // Vienen de la sintaxis base de Java (no requieren import)
+    private final int x[] = new int[UNIDADES_JUEGO];
+    private final int y[] = new int[UNIDADES_JUEGO];
+
+    private int partesCuerpo = 6;  // Longitud inicial
+    private int manzanasComidas;
+    private int manzanaX;
+    private int manzanaY;
+    private char direccion = 'D';  // 'D'erecha, 'I'zquierda, 'A'rriba, 'B'ajo
+    private boolean enJuego = false;
+
+    // Declaración de objetos de las librerías importadas
+    private Timer timer;    // Objeto de javax.swing
+    private Random random;  // Objeto de java.util
+
+    // Constructor: Se ejecuta al crear el juego
+    public SnakeJuego() {
+        random = new Random(); // Inicializamos la utilidad de aleatoriedad
         
-        // Configuración básica del panel
-        this.setPreferredSize(new Dimension(ANCHO_PANTALLA, ALTO_PANTALLA)); // Tamaño
-        this.setBackground(Color.black); // Fondo negro
-        this.setFocusable(true);         // Permitir que el panel reciba teclas
-        this.addKeyListener(this);       // Agregamos el "oído" para el teclado
+        // Métodos de la clase padre (JPanel - javax.swing)
+        this.setPreferredSize(new Dimension(ANCHO, ALTO)); // Dimension viene de java.awt
+        this.setBackground(Color.black); // Color viene de java.awt
+        this.setFocusable(true); // Permite que el panel reciba "foco" para detectar teclas
         
-        iniciarJuego(); // Llamamos al método que arranca todo
+        // Agregamos nuestro "escucha" de teclas (definido más abajo)
+        this.addKeyListener(new MiAdaptadorDeTeclas()); 
+        
+        iniciarJuego();
     }
 
-    // Método para preparar el inicio
     public void iniciarJuego() {
-        nuevaManzana();     // Colocamos la primera comida
-        enJuego = true;     // Activamos la bandera de "jugando"
-        timer = new Timer(VELOCIDAD, this); // Creamos el reloj con la velocidad definida
-        timer.start();      // Arrancamos el reloj
+        nuevaManzana();
+        enJuego = true;
+        // Timer(velocidad, quién_escucha). "this" es esta clase porque implementa ActionListener
+        timer = new Timer(RETRASO, this); 
+        timer.start();
     }
 
-    // Método principal de dibujo (se llama automáticamente por Swing)
+    // Método de la clase JPanel (javax.swing). Se llama automáticamente para pintar la pantalla.
     public void paintComponent(Graphics g) {
-        super.paintComponent(g); // Limpia la pantalla
-        dibujar(g); // Llamamos a nuestro método de dibujo personalizado
+        super.paintComponent(g); // Limpia la pantalla anterior
+        dibujar(g); // Pasamos el objeto Graphics (java.awt) para que pinte
     }
 
-    // Método donde dibujamos los gráficos del juego
+    // Método propio para organizar el dibujo
     public void dibujar(Graphics g) {
         if (enJuego) {
-            // Opcional: Dibujar una cuadrícula para ver mejor las celdas (comentado para estilo retro limpio)
-            /*
-            for(int i=0; i<ANCHO_PANTALLA/TAMANO_CUADRO; i++) {
-                g.drawLine(i*TAMANO_CUADRO, 0, i*TAMANO_CUADRO, ALTO_PANTALLA);
-                g.drawLine(0, i*TAMANO_CUADRO, ANCHO_PANTALLA, i*TAMANO_CUADRO);
-            }
-            */
+            // Dibujar Manzana (java.awt.Graphics)
+            g.setColor(Color.red); // Definimos el color del pincel a rojo (java.awt.Color)
+            g.fillOval(manzanaX, manzanaY, TAMANO_UNITARIO, TAMANO_UNITARIO); // Dibujamos círculo relleno
 
-            // --- DIBUJAR LA MANZANA ---
-            g.setColor(Color.red); // Color rojo
-            // Dibujamos un óvalo en la posición de la manzana
-            g.fillOval(manzanaX, manzanaY, TAMANO_CUADRO, TAMANO_CUADRO);
-
-            // --- DIBUJAR LA SERPIENTE ---
-            for(int i = 0; i < partesCuerpo; i++) {
-                if(i == 0) { // Si es la cabeza (índice 0)
-                    g.setColor(Color.green); // Color verde brillante
-                    g.fillRect(x[i], y[i], TAMANO_CUADRO, TAMANO_CUADRO);
-                } else { // Si es el cuerpo
-                    g.setColor(new Color(45, 180, 0)); // Un verde un poco más oscuro
-                    g.fillRect(x[i], y[i], TAMANO_CUADRO, TAMANO_CUADRO);
+            // Dibujar Serpiente
+            for (int i = 0; i < partesCuerpo; i++) {
+                if (i == 0) { // Cabeza
+                    g.setColor(Color.green);
+                    g.fillRect(x[i], y[i], TAMANO_UNITARIO, TAMANO_UNITARIO); // Rectángulo relleno
+                } else { // Cuerpo
+                    g.setColor(new Color(45, 180, 0)); // Creamos un color verde personalizado (R, G, B)
+                    g.fillRect(x[i], y[i], TAMANO_UNITARIO, TAMANO_UNITARIO);
                 }
             }
             
-            // --- DIBUJAR PUNTUACIÓN ---
+            // Dibujar Puntuación
             g.setColor(Color.red);
-            g.setFont(new Font("Ink Free", Font.BOLD, 40));
+            g.setFont(new Font("Ink Free", Font.BOLD, 40)); // Fuente Ink Free, Negrita, tamaño 40 (java.awt.Font)
+            // FontMetrics (java.awt) nos ayuda a centrar el texto matemáticamente
             FontMetrics metrics = getFontMetrics(g.getFont());
-            // Centramos el texto de puntuación arriba
-            g.drawString("Puntos: " + manzanasComidas, 
-                         (ANCHO_PANTALLA - metrics.stringWidth("Puntos: " + manzanasComidas))/2, 
-                         g.getFont().getSize());
-        } else {
-            finDelJuego(g); // Si no estamos jugando, mostramos pantalla de Game Over
-        }
-    }
-
-    // Método para generar una nueva manzana en posición aleatoria
-    public void nuevaManzana() {
-        // Genera una coordenada X aleatoria dentro de la cuadrícula
-        manzanaX = random.nextInt((int)(ANCHO_PANTALLA / TAMANO_CUADRO)) * TAMANO_CUADRO;
-        // Genera una coordenada Y aleatoria dentro de la cuadrícula
-        manzanaY = random.nextInt((int)(ALTO_PANTALLA / TAMANO_CUADRO)) * TAMANO_CUADRO;
-    }
-
-    // Método para mover la serpiente
-    public void mover() {
-        // Recorremos el cuerpo de atrás hacia adelante
-        // Cada parte del cuerpo toma la posición de la parte anterior
-        for(int i = partesCuerpo; i > 0; i--) {
-            x[i] = x[i-1];
-            y[i] = y[i-1];
-        }
-
-        // Movemos la cabeza (índice 0) según la dirección actual
-        switch(direccion) {
-            case 'U': // Arriba (Up)
-                y[0] = y[0] - TAMANO_CUADRO;
-                break;
-            case 'D': // Abajo (Down)
-                y[0] = y[0] + TAMANO_CUADRO;
-                break;
-            case 'L': // Izquierda (Left)
-                x[0] = x[0] - TAMANO_CUADRO;
-                break;
-            case 'R': // Derecha (Right)
-                x[0] = x[0] + TAMANO_CUADRO;
-                break;
-        }
-    }
-
-    // Método para verificar si comimos una manzana
-    public void verificarManzana() {
-        // Si la cabeza (x[0], y[0]) está en la misma posición que la manzana
-        if((x[0] == manzanaX) && (y[0] == manzanaY)) {
-            partesCuerpo++;  // La serpiente crece
-            manzanasComidas++; // Sumamos puntos
-            nuevaManzana();  // Generamos nueva comida
-        }
-    }
-
-    // Método para verificar choques (con bordes o consigo misma)
-    public void verificarColisiones() {
-        // Verificamos si la cabeza choca con el cuerpo
-        for(int i = partesCuerpo; i > 0; i--) {
-            if((x[0] == x[i]) && (y[0] == y[i])) {
-                enJuego = false; // Fin del juego
-            }
-        }
-
-        // Verificamos si choca con los bordes
-        if(x[0] < 0) enJuego = false; // Borde izquierdo
-        if(x[0] > ANCHO_PANTALLA) enJuego = false; // Borde derecho
-        if(y[0] < 0) enJuego = false; // Borde superior
-        if(y[0] > ALTO_PANTALLA) enJuego = false; // Borde inferior
-
-        if(!enJuego) {
-            timer.stop(); // Si perdimos, detenemos el reloj
-        }
-    }
-
-    // Método para mostrar pantalla de Game Over
-    public void finDelJuego(Graphics g) {
-        // Texto de Puntuación Final
-        g.setColor(Color.red);
-        g.setFont(new Font("Ink Free", Font.BOLD, 40));
-        FontMetrics metrics1 = getFontMetrics(g.getFont());
-        g.drawString("Puntos: " + manzanasComidas, 
-                     (ANCHO_PANTALLA - metrics1.stringWidth("Puntos: " + manzanasComidas))/2, 
-                     g.getFont().getSize());
-        
-        // Texto de "Game Over"
-        g.setColor(Color.red);
-        g.setFont(new Font("Ink Free", Font.BOLD, 75));
-        FontMetrics metrics2 = getFontMetrics(g.getFont());
-        g.drawString("Game Over", 
-                     (ANCHO_PANTALLA - metrics2.stringWidth("Game Over"))/2, 
-                     ALTO_PANTALLA / 2);
-    }
-
-    // --- BUCLE DEL JUEGO (ActionListener) ---
-    // Este método se ejecuta cada vez que el Timer cumple su ciclo (velocidad)
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if(enJuego) {
-            mover();             // Calculamos nueva posición
-            verificarManzana();  // Verificamos si comió
-            verificarColisiones(); // Verificamos si murió
-        }
-        repaint(); // Redibujamos la pantalla con los nuevos datos
-    }
-
-    // --- CONTROLES (KeyListener) ---
-    @Override
-    public void keyPressed(KeyEvent e) {
-        // Detectamos qué tecla se presionó
-        switch(e.getKeyCode()) {
-            case KeyEvent.VK_LEFT: // Flecha Izquierda
-                // Solo giramos si no vamos a la derecha (para no suicidarnos 180 grados)
-                if(direccion != 'R') {
-                    direccion = 'L';
-                }
-                break;
-            case KeyEvent.VK_RIGHT: // Flecha Derecha
-                if(direccion != 'L') {
-                    direccion = 'R';
-                }
-                break;
-            case KeyEvent.VK_UP: // Flecha Arriba
-                if(direccion != 'D') {
-                    direccion = 'U';
-                }
-                break;
-            case KeyEvent.VK_DOWN: // Flecha Abajo
-                if(direccion != 'U') {
-                    direccion = 'D';
-                }
-                break;
-        }
-    }
-
-    // Métodos obligatorios de KeyListener que no usamos pero deben estar presentes
-    @Override
-    public void keyTyped(KeyEvent e) {}
-    @Override
-    public void keyReleased(KeyEvent e) {}
-
-    // --- MÉTODO MAIN PARA EJECUTAR ---
-    public static void main(String[] args) {
-        // Creamos la ventana principal (JFrame)
-        JFrame frame = new JFrame();
-        JuegoSnake juego = new JuegoSnake(); // Creamos instancia de nuestro juego
-        
-        frame.add(juego); // Agregamos el panel del juego a la ventana
-        frame.setTitle("Juego Snake en Java");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Cerrar al salir
-        frame.setResizable(false); // No permitir cambiar tamaño
-        frame.pack(); // Ajustar ventana al tamaño preferido del panel
-        frame.setVisible(true); // Mostrar ventana
-        frame.setLocationRelativeTo(null); // Centrar en pantalla
-    }
-}
+            g.drawString
