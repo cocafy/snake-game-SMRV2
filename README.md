@@ -107,4 +107,113 @@ public class SnakeJuego extends JPanel implements ActionListener {
             g.setFont(new Font("Ink Free", Font.BOLD, 40)); // Fuente Ink Free, Negrita, tamaño 40 (java.awt.Font)
             // FontMetrics (java.awt) nos ayuda a centrar el texto matemáticamente
             FontMetrics metrics = getFontMetrics(g.getFont());
-            g.drawString
+            g.drawString("Puntos: " + manzanasComidas, (ANCHO - metrics.stringWidth("Puntos: " + manzanasComidas))/2, g.getFont().getSize());
+        } else {
+            finDelJuego(g);
+        }
+    }
+
+    // Usa java.util.Random para elegir coordenadas
+    public void nuevaManzana() {
+        manzanaX = random.nextInt((int)(ANCHO / TAMANO_UNITARIO)) * TAMANO_UNITARIO;
+        manzanaY = random.nextInt((int)(ALTO / TAMANO_UNITARIO)) * TAMANO_UNITARIO;
+    }
+
+    // Lógica pura de Java (movimiento de arrays)
+    public void mover() {
+        for (int i = partesCuerpo; i > 0; i--) {
+            x[i] = x[i-1];
+            y[i] = y[i-1];
+        }
+        switch(direccion) {
+            case 'A': y[0] = y[0] - TAMANO_UNITARIO; break;
+            case 'B': y[0] = y[0] + TAMANO_UNITARIO; break;
+            case 'I': x[0] = x[0] - TAMANO_UNITARIO; break;
+            case 'D': x[0] = x[0] + TAMANO_UNITARIO; break;
+        }
+    }
+
+    public void comprobarManzana() {
+        if ((x[0] == manzanaX) && (y[0] == manzanaY)) {
+            partesCuerpo++;
+            manzanasComidas++;
+            nuevaManzana();
+        }
+    }
+
+    public void comprobarColisiones() {
+        // Choca consigo misma
+        for (int i = partesCuerpo; i > 0; i--) {
+            if ((x[0] == x[i]) && (y[0] == y[i])) {
+                enJuego = false;
+            }
+        }
+        // Choca con bordes
+        if (x[0] < 0 || x[0] > ANCHO || y[0] < 0 || y[0] > ALTO) {
+            enJuego = false;
+        }
+        if (!enJuego) timer.stop();
+    }
+
+    public void finDelJuego(Graphics g) {
+        // Texto de Fin
+        g.setColor(Color.red);
+        g.setFont(new Font("Ink Free", Font.BOLD, 75));
+        FontMetrics metrics = getFontMetrics(g.getFont());
+        g.drawString("Game Over", (ANCHO - metrics.stringWidth("Game Over"))/2, ALTO/2);
+    }
+
+    // =========================================================================
+    // IMPLEMENTACIÓN DE INTERFACES (LISTENERS)
+    // =========================================================================
+
+    // Método obligado por la interfaz ActionListener (java.awt.event)
+    // Se ejecuta cada vez que el Timer (javax.swing) hace "tick"
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (enJuego) {
+            mover();
+            comprobarManzana();
+            comprobarColisiones();
+        }
+        repaint(); // Método de JPanel que pide "volver a pintar" la pantalla
+    }
+
+    // Clase interna para escuchar el teclado
+    // Extiende KeyAdapter (java.awt.event) para no tener que escribir métodos vacíos
+    public class MiAdaptadorDeTeclas extends KeyAdapter {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            // KeyEvent (java.awt.event) nos da los códigos virtuales de las teclas (VK_LEFT, etc.)
+            switch(e.getKeyCode()) {
+                case KeyEvent.VK_LEFT:
+                    if (direccion != 'D') direccion = 'I';
+                    break;
+                case KeyEvent.VK_RIGHT:
+                    if (direccion != 'I') direccion = 'D';
+                    break;
+                case KeyEvent.VK_UP:
+                    if (direccion != 'B') direccion = 'A';
+                    break;
+                case KeyEvent.VK_DOWN:
+                    if (direccion != 'A') direccion = 'B';
+                    break;
+            }
+        }
+    }
+
+    // Método Main estándar de Java
+    public static void main(String[] args) {
+        // JFrame (javax.swing): La ventana física
+        JFrame frame = new JFrame(); 
+        SnakeJuego juego = new SnakeJuego();
+        
+        frame.add(juego);
+        frame.setTitle("Snake Explicado");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.pack(); // Ajusta la ventana al tamaño del panel (JPanel)
+        frame.setVisible(true);
+        frame.setLocationRelativeTo(null);
+    }
+}
