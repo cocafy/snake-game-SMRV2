@@ -1,15 +1,3 @@
-Aquí tienes el código completo para un juego de Snake (la viborita) en Java. He diseñado este código para que sea un solo archivo fácil de copiar y ejecutar.
-
-Todo el código está comentado línea por línea en español para que entiendas exactamente qué función cumple cada parte, desde el bucle del juego hasta el dibujo de los gráficos.
-
-Cómo ejecutarlo
-Crea un archivo llamado JuegoSnake.java.
-
-Pega el siguiente código.
-
-Compílalo y ejecútalo (si usas terminal: javac JuegoSnake.java y luego java JuegoSnake).
-
-java
 import javax.swing.*; // Importamos librerías para ventanas y componentes visuales
 import java.awt.*;    // Importamos librerías para gráficos (colores, dibujo)
 import java.awt.event.*; // Importamos librerías para manejar eventos (teclado)
