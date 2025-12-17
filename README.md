@@ -1,1 +1,1 @@
-Coca eres un paleto
+baneado
